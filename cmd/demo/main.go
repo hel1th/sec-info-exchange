@@ -20,7 +20,7 @@ func main() {
 	}
 }
 
-const infoPath = "/info"
+const infoPath = "/info/"
 
 func run() error {
 	base := os.Getenv("BASE_URL")
@@ -51,8 +51,8 @@ func run() error {
 		{http.MethodPost, infoPath, reader, body, http.StatusForbidden},
 		{http.MethodPost, infoPath, writer, body, http.StatusCreated},
 		{http.MethodPost, infoPath, writer, body, http.StatusConflict},
-		{http.MethodGet, "/info/" + id, reader, "", http.StatusOK},
-		{http.MethodPut, "/info/" + id, writer, `{"name":"Updated","severity":"low"}`, http.StatusOK},
+		{http.MethodGet, infoPath + id, reader, "", http.StatusOK},
+		{http.MethodPut, infoPath + id, writer, `{"name":"Updated","severity":"low"}`, http.StatusOK},
 	} {
 		status, err := request(ctx, client, base+tc.path, tc.method, tc.key, tc.body)
 		if err != nil {
@@ -64,7 +64,7 @@ func run() error {
 		fmt.Printf("%s %s -> %d\n", tc.method, tc.path, status)
 	}
 	for range 1000 {
-		status, err := request(ctx, client, base+"/info/"+id, http.MethodGet, reader, "")
+		status, err := request(ctx, client, base+infoPath+id, http.MethodGet, reader, "")
 		if err != nil {
 			return err
 		}
