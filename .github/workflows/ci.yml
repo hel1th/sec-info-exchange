@@ -1,0 +1,76 @@
+name: CI
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          args: --timeout=5m
+
+  test-and-build:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: threats
+          POSTGRES_PASSWORD: integration-only
+          POSTGRES_DB: threats
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U threats -d threats"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://threats:integration-only@localhost:5432/threats?sslmode=disable
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Check generated API types
+        run: |
+          make generate
+          git diff --exit-code -- internal/api/generated
+          test -z "$(git ls-files --others --exclude-standard -- internal/api/generated)"
+
+      - name: Run unit and PostgreSQL integration tests
+        run: go test -v -race -count=1 ./...
+
+      - name: Build commands
+        run: |
+          go build -v -o /dev/null ./cmd/server
+          go build -v -o /dev/null ./cmd/demo
+
+      - name: Build Docker image
+        run: docker build -t threat-service:ci .

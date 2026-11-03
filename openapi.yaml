@@ -1,0 +1,352 @@
+openapi: 3.0.0
+info:
+  title: Information Exchange Service
+  description: API для обмена информацией об угрозах. 
+  version: 1.0.0
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /healthz:
+    get:
+      operationId: health
+      security: []
+      responses:
+        '200':
+          description: Process is alive
+  /readyz:
+    get:
+      operationId: readiness
+      security: []
+      responses:
+        '200':
+          description: Database is reachable
+        '503':
+          description: Database is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /info/{md5}:
+    get:
+      summary: Получить информацию об угрозе по MD5
+      description: Возвращает полную информацию об угрозе для указанного MD5-хеша.
+      operationId: getInfoByMd5
+      parameters:
+        - name: md5
+          in: path
+          required: true
+          description: MD5-хеш файла (32 символа, шестнадцатеричные цифры)
+          schema:
+            type: string
+            pattern: '^[a-fA-F0-9]{32}$'
+            example: "d41d8cd98f00b204e9800998ecf8427e"
+      responses:
+        '200':
+          description: Успешный ответ с информацией об угрозе
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreatResponse'
+        '404':
+          description: Угроза с указанным MD5 не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Некорректный формат MD5
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Writer role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Request body too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      summary: Обновить информацию об угрозе по MD5
+      description: Заменяет информацию о существующей угрозе
+      operationId: updateThreat
+      parameters:
+        - name: md5
+          in: path
+          required: true
+          description: MD5-хеш обновляемой записи
+          schema:
+            type: string
+            pattern: '^[a-fA-F0-9]{32}$'
+            example: "d41d8cd98f00b204e9800998ecf8427e"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThreatUpdateRequest'
+      responses:
+        '200':
+          description: Информация успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreatResponse'
+        '400':
+          description: Некорректные данные запроса или MD5
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Угроза с указанным MD5 не найден
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Writer role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Request body too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /info:
+    post:
+      summary: Создать новую запись об угрозе
+      description: Добавляет новую информацию об угрозе. MD5 должен быть уникальным.
+      operationId: createThreat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThreatCreateRequest'
+      responses:
+        '201':
+          description: Запись успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThreatResponse'
+        '400':
+          description: Некорректные данные запроса (например, невалидный MD5)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Угроза с таким MD5 уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid API key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Writer role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: Request body too large
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Reader permits GET; writer permits GET, POST and PUT.
+  schemas:
+    ThreatCreateRequest:
+      type: object
+      required:
+        - md5
+        - name
+        - severity
+      properties:
+        md5:
+          type: string
+          pattern: '^[a-fA-F0-9]{32}$'
+          description: MD5-хеш файла (32 шестнадцатеричных символа)
+          example: "d41d8cd98f00b204e9800998ecf8427e"
+        name:
+          type: string
+          description: Название угрозы
+          example: "Trojan.Win32.Generic"
+          minLength: 1
+          maxLength: 255
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+          maxLength: 4096
+        tags:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+    ThreatUpdateRequest:
+      type: object
+      required:
+        - name
+        - severity
+      properties:
+        name:
+          type: string
+          description: Название угрозы
+          example: "Trojan.Win32.Generic"
+          minLength: 1
+          maxLength: 255
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+          maxLength: 4096
+        tags:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+        
+    ThreatResponse:
+      type: object
+      required: [md5, name, severity, description, tags, created_at, updated_at]
+      properties:
+        md5:
+          type: string
+          pattern: '^[a-fA-F0-9]{32}$'
+          description: MD5-хеш
+          example: "d41d8cd98f00b204e9800998ecf8427e"
+        name:
+          type: string
+          description: Название угрозы
+          example: "Trojan.Win32.Generic"
+          minLength: 1
+          maxLength: 255
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        description:
+          type: string
+          maxLength: 4096
+        tags:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items:
+            type: string
+            minLength: 1
+            maxLength: 64
+
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          description: Человекочитаемое описание ошибки
+          example: "Threat not found"
+        details:
+          type: string
+          description: Дополнительная информация
+          example: "No threat with MD5 d41d8cd98f00b204e9800998ecf8427e found"

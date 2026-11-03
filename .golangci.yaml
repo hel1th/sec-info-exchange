@@ -1,0 +1,217 @@
+version: "2"
+
+run:
+  go: "1.26"
+  timeout: 5m
+  tests: true
+  allow-parallel-runners: true
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - bodyclose
+    - rowserrcheck
+    - sqlclosecheck
+    - nilerr
+    - errorlint
+    - contextcheck
+    - noctx
+    - makezero
+    - exhaustive
+    - durationcheck
+    - asasalint
+    - gosec
+    - lll
+    # - funlen
+    - gocyclo
+    - gocognit
+    - nestif
+    - dupl
+    - revive
+    - gocritic
+    - goconst
+    - misspell
+    - unconvert
+    - unparam
+    - wastedassign
+    - prealloc
+    - nakedret
+    - nolintlint
+    - depguard
+    - testifylint
+    - tparallel
+    - thelper
+
+  settings:
+    errcheck:
+      exclude-functions:
+        - (*encoding/json.Encoder).Encode
+      check-type-assertions: true
+      check-blank: false
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+
+    funlen:
+      lines: 60
+      statements: 40
+      ignore-comments: true
+
+    gocyclo:
+      min-complexity: 15
+
+    gocognit:
+      min-complexity: 20
+
+    nestif:
+      min-complexity: 4
+
+    lll:
+      line-length: 120
+
+    dupl:
+      threshold: 150
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    gosec:
+      excludes:
+        - G104
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+
+    revive:
+      severity: warning
+      rules:
+        - name: var-naming
+        - name: indent-error-flow
+        - name: errorf
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: early-return
+        - name: unused-parameter
+        - name: defer
+        - name: range-val-address
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+        - opinionated
+      disabled-checks:
+        - rangeValCopy
+        - exitAfterDefer
+        - tooManyResultsChecker
+        - whyNoLint
+        - hugeParam
+        - ruleguard
+
+    depguard:
+      rules:
+        domain-is-pure:
+          files:
+            - "**/internal/domain/**"
+          deny:
+            - pkg: "github.com/jackc/pgx"
+              desc: "the domain must not know about the database"
+            - pkg: "net/http"
+              desc: "the domain must not know about the transport"
+            - pkg: "github.com/go-chi/chi"
+              desc: "the domain must not know about the router"
+            - pkg: "encoding/json"
+              desc: "the domain must not know about serialization, map it in infra or api"
+            - pkg: "github.com/hel1th/sec-info-exchange/internal/repository"
+              desc: "a module domain must not import other modules"
+
+        usecase-has-no-transport:
+          files:
+            - "**/internal/usecase/**"
+          deny:
+            - pkg: "net/http"
+              desc: "a use case must not know about HTTP"
+            - pkg: "github.com/go-chi/chi"
+              desc: "a use case must not know about the router"
+            - pkg: "github.com/jackc/pgx"
+              desc: "a use case works through the repository interface"
+
+        api-has-no-infra:
+          files:
+            - "**/internal/transport/http/**"
+          deny:
+            - pkg: "github.com/jackc/pgx"
+              desc: "the transport layer must not touch the database directly"
+
+        shared-is-pure:
+          files:
+            - "**/internal/shared/**"
+          deny:
+            - pkg: "github.com/hel1th/sec-info-exchange/internal/repository"
+              desc: "shared must not know about modules"
+
+        all:
+          files:
+            - "$all"
+          deny:
+            - pkg: "github.com/pkg/errors"
+              desc: "use stdlib errors with fmt.Errorf and %w"
+            - pkg: "io/ioutil"
+              desc: "deprecated, use io and os"
+            - pkg: "math/rand"
+              desc: "use math/rand/v2 or crypto/rand"
+
+  exclusions:
+    generated: lax
+    rules:
+      - path: (.+)_test\.go
+        linters:
+          - dupl
+          - gosec
+          - goconst
+          - funlen
+          - errcheck
+          - revive
+          - lll
+      - path: internal/module/.*/domain/.*_test\.go
+        linters:
+          - depguard
+      - path: internal/module/.*/api/dto\.go
+        linters:
+          - dupl
+      - path: cmd/
+        linters:
+          - funlen
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+    - gci
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/hel1th/sec-info-exchange
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/hel1th/sec-info-exchange)
+    gofumpt:
+      extra:
+        group-params: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
