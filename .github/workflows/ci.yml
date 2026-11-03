@@ -60,7 +60,7 @@ jobs:
 
       - name: Check generated API types
         run: |
-          make generate
+          make generate COMPOSE="docker compose --env-file .env.example"
           git diff --exit-code -- internal/api/generated
           test -z "$(git ls-files --others --exclude-standard -- internal/api/generated)"
 

@@ -1,11 +1,11 @@
 # Information Exchange Service
 
 API для обмена информацией об угрозах на Go с PostgreSQL и маршрутизацией chi.
-Реализованы GET /info/{md5}, POST /info, PUT /info/{md5}, GET /healthz и GET /readyz.
+Реализованы `GET /info/{md5}`, `POST /info`, `PUT /info/{md5}`, `GET /healthz` и `GET /readyz`.
 
 ## Запуск
 
-Скопируйте `.env.example` в `.env` и задайте ключи API_READER_KEY/API_WRITER_KEY
+Скопируйте `.env.example` в `.env` и задайте ключи `API_READER_KEY`/`API_WRITER_KEY`
 
 ```sh
 docker compose up --build -d
@@ -15,7 +15,6 @@ docker compose logs -f api
 
 API доступен по адресу `http://localhost:8080`. Публичные проверки состояния:
 `http://localhost:8080/healthz` и `http://localhost:8080/readyz`.
-Compose задаёт адрес БД внутри сети контейнеров, экспортировать DATABASE_URL не нужно.
 
 Встроенные goose-миграции применяются автоматически перед запуском HTTP,
 с учётом версий и PostgreSQL advisory lock. Ожидание БД и миграций ограничено
@@ -28,10 +27,6 @@ docker compose down
 ```
 
 ## Проверки и генерация
-
-Сервисы tools, integration и lint включены в профиль tools и запускаются явно.
-Исходники подключены к контейнерам; форматирование и генерация обновляют файлы проекта.
-Зависимости и кэши сохраняются в Docker volumes. Первый запуск скачивает образы и модули.
 
 ```sh
 docker compose build api
@@ -49,9 +44,9 @@ docker compose run --rm tools go run github.com/oapi-codegen/oapi-codegen/v2/cmd
 docker compose run --rm integration
 ```
 
-Команда запускает БД, ждёт её готовности и передаёт TEST_DATABASE_URL тестам.
+Команда запускает БД, ждёт её готовности и передаёт `TEST_DATABASE_URL` тестам.
 Обычный запуск тестов через tools пропускает тесты БД. Каждый интеграционный тест
-создаёт случайную схему и удаляет только её. Пользователю нужны права CREATE SCHEMA.
+создаёт случайную схему и удаляет только её. Пользователю нужны права `CREATE SCHEMA`.
 Проверяются миграции, конкурентное создание, чтение, обновление и отмена контекста.
 
 ## Makefile
@@ -71,5 +66,5 @@ GNU Make необязателен: цели вызывают те же Docker Co
 | `make check` | Собрать образ, выполнить тесты, vet и линтер |
 | `make demo` | Проверить уже запущенный API |
 
-API требует X-API-Key. Роли, лимиты и демонстрация описаны в
+API требует `X-API-Key`. Роли, лимиты и демонстрация описаны в
 [docs/security.md](docs/security.md). CI настроен в `.github/workflows/ci.yml`.
